@@ -318,10 +318,10 @@ def main():
         )
 
     if data_args.block_size <= 0:
-        data_args.block_size = tokenizer.max_len
+        data_args.block_size = tokenizer.model_max_length#tokenizer.max_len
         # Our input block size will be the max possible for the model
     else:
-        data_args.block_size = min(data_args.block_size, tokenizer.max_len)
+        data_args.block_size = min(data_args.block_size, tokenizer.model_max_length)#tokenizer.max_len)
 
     # Get datasets
 
@@ -345,7 +345,8 @@ def main():
         data_collator=data_collator,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        prediction_loss_only=True,
+        #prediction_loss_only=True,
+        #is_world_process_zero = True
     )
 
     # Training
@@ -359,7 +360,7 @@ def main():
         trainer.save_model()
         # For convenience, we also re-save the tokenizer to the same directory,
         # so that you can share your model easily on huggingface.co/models =)
-        if trainer.is_world_master():
+        if trainer.is_world_process_zero():
             tokenizer.save_pretrained(training_args.output_dir)
 
     # Evaluation
@@ -373,7 +374,7 @@ def main():
         result = {"perplexity": perplexity}
 
         output_eval_file = os.path.join(training_args.output_dir, "eval_results_lm.txt")
-        if trainer.is_world_master():
+        if trainer.is_world_process_zero():
             with open(output_eval_file, "w") as writer:
                 logger.info("***** Eval results *****")
                 for key in sorted(result.keys()):
